@@ -11,7 +11,7 @@ class ChatClient:
     def __init__(self, server):
         self.root = Tk()
         self.root.title("ChatClient")
-        
+
         self.windowHeight = 500
         self.windowWidth = 700
         self.theme = "#9999FF"
