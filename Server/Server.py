@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 import SocketServer
 import json
+import datetime
 
 """
 Variables and functions that must be used by all the ClientHandler objects
@@ -65,6 +66,14 @@ class ClientHandler(SocketServer.BaseRequestHandler):
 
     def _logged_in(self, username):
         return username in self._client_list
+
+    def _send_info(self, socket, info):
+        socket.send(json.dumps({
+        'timestamp' : str(datetime.datetime.now().timestamp()),
+        'sender' : "server",
+        'response' : "info",
+        'content' : info
+        }))
 
 
 
