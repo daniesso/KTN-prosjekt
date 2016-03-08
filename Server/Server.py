@@ -67,16 +67,16 @@ class ClientHandler(SocketServer.BaseRequestHandler):
     def _logged_in(self, username):
         return username in self._client_list
 
-    def _send_info(self, socket, info):
-        socket.send(json.dumps({
+    def _send_info(self, info):
+        self.connection.send(json.dumps({
         'timestamp' : str(datetime.datetime.now().timestamp()),
         'sender' : "server",
         'response' : "info",
         'content' : info
         }))
 
-    def _send_error(self, socket, error):
-        socket.send(json.dumps({
+    def _send_error(self, error):
+        self.connection.send(json.dumps({
         'timestamp' : str(datetime.datetime.now().timestamp()),
         'sender' : "server",
         'response' : "error",
