@@ -54,7 +54,15 @@ class ClientHandler(SocketServer.BaseRequestHandler):
         pass
 
     def handle_help(self, content):
-        pass
+        self.send_info("""This server supports requests in the following format:
+        1. login(user name) - attempts to log in with user name
+        2. logout() - logs the user out
+        3. msg(message) - sends message to everyone in chat room
+        4. names() - lists all users in chatroom
+        5. chatroom(chatroom name) - changes chatroom to chatroom name.
+        6. help() - shows help.
+        7. info() - session information.
+        """)
 
     def get_connected_clients(self):
         pass
