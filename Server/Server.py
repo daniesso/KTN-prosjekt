@@ -63,6 +63,9 @@ class ClientHandler(SocketServer.BaseRequestHandler):
                            'response': response,
                            'timestamp': str(datetime.datetime.now().timestamp())})
 
+    def _logged_in(self, username):
+        return username in self._client_list
+
 
 
 
