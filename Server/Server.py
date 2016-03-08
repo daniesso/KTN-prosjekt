@@ -75,6 +75,14 @@ class ClientHandler(SocketServer.BaseRequestHandler):
         'content' : info
         }))
 
+    def _send_error(self, socket, error):
+        socket.send(json.dumps({
+        'timestamp' : str(datetime.datetime.now().timestamp()),
+        'sender' : "server",
+        'response' : "error",
+        'content' : error
+        }))
+
 
 
 
