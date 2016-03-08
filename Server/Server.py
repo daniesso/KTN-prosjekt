@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*-
 import SocketServer
+import json
 
 """
 Variables and functions that must be used by all the ClientHandler objects
@@ -14,6 +15,11 @@ class ClientHandler(SocketServer.BaseRequestHandler):
     logic for the server, you must write it outside this class
     """
 
+    _history = []
+    _client_list = []
+    _commands = {'login': self.handle_login, 'logout': self.handle_logout, 'message': self.handle_message,
+                 'names': self.handle_names, 'help': self.handle_help}
+
     def handle(self):
         """
         This method handles the connection between a client and the server.
@@ -25,8 +31,32 @@ class ClientHandler(SocketServer.BaseRequestHandler):
         # Loop that listens for messages from the client
         while True:
             received_string = self.connection.recv(4096)
-            
-            # TODO: Add handling of received payload from client
+            req = json.loads(received_string)
+            command = req.get('request', 'help')
+            content = req.get('content', '')
+            if command not in self._commands:
+                command = 'help'
+            self._commands.get(command)(content)
+
+    def handle_login(self, content):
+        pass
+
+    def handle_names(self, content):
+        pass
+
+    def handle_message(self, content):
+        pass
+
+    def handle_logout(self, content):
+        pass
+
+    def handle_help(self, content):
+        pass
+
+    def get_connected_clients(self):
+        pass
+
+
 
 
 class ThreadedTCPServer(SocketServer.ThreadingMixIn, SocketServer.TCPServer):
