@@ -16,7 +16,7 @@ class ClientHandler(SocketServer.BaseRequestHandler):
     """
 
     _history = []
-    _client_list = []
+    _client_list = {}
     _commands = {'login': self.handle_login, 'logout': self.handle_logout, 'message': self.handle_message,
                  'names': self.handle_names, 'help': self.handle_help}
 
@@ -36,10 +36,12 @@ class ClientHandler(SocketServer.BaseRequestHandler):
             content = req.get('content', '')
             if command not in self._commands:
                 command = 'help'
-            self._commands.get(command)(content)
+            response = self._commands.get(command)(content)
 
     def handle_login(self, content):
-        pass
+        if content.isalpha():
+            if content not in self._client_list:
+                self._client_list[content] = self
 
     def handle_names(self, content):
         pass
@@ -55,6 +57,14 @@ class ClientHandler(SocketServer.BaseRequestHandler):
 
     def get_connected_clients(self):
         pass
+
+    def _create_json(self, sender, response, content):
+        return json.dumps({'timestamp': timestamp, 'sender': sender,
+                           'response': response,
+                           'timestamp': str(datetime.datetime.now().timestamp())})
+
+    def _logged_in(self, username):
+        return username in self._client_list
 
 
 
