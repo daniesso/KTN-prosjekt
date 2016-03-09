@@ -15,6 +15,7 @@ class Client(Thread):
         super(Client, self).__init__(name = "Sender")
 
         self._connection = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        logging.debug("Connected to server")
         self._host = host
         self._server_port = server_port
         self._connection.connect((self._host, self._server_port))
@@ -22,9 +23,7 @@ class Client(Thread):
         self._out_queue = Queue()   # Queue for outgoing traffic
         self._in_queue = Queue()    # Queue for incoming traffic
 
-
-        self._receive_thread = Thread(target = self._receive_message, name =
-        "Receiver")
+        self._receive_thread = Thread(target = self._receive_message, name = "Receiver")
         self.daemon = True
         self._receive_thread.daemon = True
 
@@ -43,16 +42,15 @@ class Client(Thread):
     def has_next(self):
         return not self._in_queue.empty()
 
-    def get_next(self):
-        return self._in_queue.get() # blocks if queue is empty, so check first
+    def get_next(self):                 # Blocks if queue is empty,
+        return self._in_queue.get()     # so check first with has_next
 
     def run(self):
-        logging.debug("Connected to server")
 
         while not self._exit_flag.is_set():
-            string = self._out_queue.get()   # Returns false if no
-            if not string:                              # data available within
-                continue                                # 2 seconds.
+            string = self._out_queue.get()
+            if not string:
+                continue
             elif string[0] == "/":
                 args = string[1:].split(" ", 1) # Max two results
                 if len(args) == 1:
@@ -64,7 +62,7 @@ class Client(Thread):
 
     def disconnect(self):
         self._exit_flag.set()
-        self._out_queue.put("") # Trigger flag check
+        self._out_queue.put("")         # Trigger flag check
 
     def _receive_message(self):
         while not self._exit_flag.is_set():
@@ -72,9 +70,10 @@ class Client(Thread):
                 raw = self._connection.recv(4096)
                 jsn = json.loads(raw)
             except ValueError as e:
-                logging.debug(e)
+                logging.debug("Error while parsing json or receiving")
                 time.sleep(0.3)
                 continue
+            logging.debug("Received from server NOW")
 
             response, time_stamp, sender, content = self._extract_fields(jsn)
             if response in self._handle:
@@ -82,14 +81,13 @@ class Client(Thread):
 
     def _extract_fields(self, jsn):
             response = jsn.get('response', '')
-            time_stamp = float(jsn.get('timestamp', time.time())) # Default to now
-            time_stamp= datetime.fromtimestamp(time_stamp).strftime("%H:%M:%S")
+            time_stamp = float(jsn.get('timestamp', time.time()))  # Default to now
+            time_stamp = datetime.fromtimestamp(time_stamp).strftime("%H:%M:%S")
             sender = jsn.get('sender', '')
             content = jsn.get('content', '')
             return response, time_stamp, sender, content
 
     def _handle_message(self, time, sender, content):
-        print time, sender, content
         self._in_queue.put("["+time+"] "+str(sender)+": "+str(content))
 
     def _handle_history(self, time, sender, content):
@@ -98,11 +96,11 @@ class Client(Thread):
             self._handle_message(*self._extract_fields(jsn)[1:])
 
     def _send_payload(self, request, content):
-        logging.debug("Sending to server " + request + ", " + str(content))
+        logging.debug("Sending to server NOW")
         self._connection.send(json.dumps({"request" : request,
-                                      "content" : content}))
+                                          "content" : content}))
 
-def printer(client):
+def printer(client): # To be replaced with GUI
     while 1:
         if client.has_next():
             print client.get_next()
@@ -113,5 +111,5 @@ if __name__ == '__main__':
     t = Thread(target=printer, args=[client])
     t.daemon = True
     t.start()
-    while 1:
+    while 1:    # To be replaced with GUI
         client.write(raw_input("> "))
