@@ -2,6 +2,9 @@
 import SocketServer
 import json
 import datetime
+import logging
+
+logging.basicConfig(format='%(levelname)s: %(message)s', level=logging.DEBUG)
 
 """
 Variables and functions that must be used by all the ClientHandler objects
@@ -32,9 +35,11 @@ class ClientHandler(SocketServer.BaseRequestHandler):
         self._commands = {'login': self.handle_login, 'logout': self.handle_logout, 'message': self.handle_message,
                           'names': self.handle_names, 'help': self.handle_help}
 
+
         # Loop that listens for messages from the client
         while True:
             received_string = self.connection.recv(4096)
+            logging.debug("Received string %s" % received_string)
             req = json.loads(received_string)
             command = req.get('request', 'help')
             content = req.get('content', None)
@@ -45,6 +50,7 @@ class ClientHandler(SocketServer.BaseRequestHandler):
                 break
 
     def handle_login(self, content):
+        logging.debug("Trying to log in user: %s" % content)
         content = content.strip()
         if content and content.isalpha():
             if self.username is not None:
@@ -59,15 +65,18 @@ class ClientHandler(SocketServer.BaseRequestHandler):
             self._send_error("Invalid username")
 
     def handle_names(self, content):
+        logging.debug("Names requested")
         self._send_info("\n".join(self._client_list.keys()))
 
     def handle_message(self, content):
+        logging.debug("Trying to send message %s" % content)
         msg = self._create_json(self.username, "message", content)
         self._history.append(msg)
         for x in self._client_list.keys():
             self._client_list[x].connection.send(msg)
 
     def handle_logout(self, content):
+        logging.debug("Logging out")
         self._send_info("Successfully logged out")
         self.connection.close()
         self._client_list.pop(self.username)
