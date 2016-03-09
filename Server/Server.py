@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*-
 import SocketServer
+import socket
 import json
 import datetime
 import logging
@@ -40,6 +41,7 @@ class ClientHandler(SocketServer.BaseRequestHandler):
         while True:
             received_string = self.connection.recv(4096)
             logging.debug("Received string:'%s'" % received_string)
+            logging.debug("Host: '%s', Port: '%s'" % (self.ip, self.port))
             try:
                 req = json.loads(received_string)
             except ValueError:
@@ -56,12 +58,16 @@ class ClientHandler(SocketServer.BaseRequestHandler):
 
     def handle_login(self, content):
         logging.debug("Trying to log in user'%s', from '%s', port '%s'" % (content, self.ip, self.port))
+        if content is None:
+            self._send_error("You must specify a username")
+            return
         content = content.strip()
         if content and content.isalpha():
             if self.username is not None:
                 self._send_error("You're already logged in as {user}".format(user=self.username))
             elif not self._logged_in(content):
                 self._client_list[content] = self
+                self.username = content
                 self._send_info("You are now logged in as {user}".format(user=content))
                 self.connection.send(self._create_json("server", "history", self._history))
             else:
@@ -71,17 +77,24 @@ class ClientHandler(SocketServer.BaseRequestHandler):
 
     def handle_names(self, content):
         logging.debug("Names requested")
+        logging.debug("Host: '%s', Port: '%s'" % (self.ip, self.port))
         self._send_info("\n".join(self._client_list.keys()))
 
     def handle_message(self, content):
-        logging.debug("Trying to send message %s" % content)
         msg = self._create_json(self.username, "message", content)
-        self._history.append(msg)
-        for x in self._client_list.keys():
-            self._client_list[x].connection.send(msg)
+        logging.debug("Trying to send message '%s'" % msg)
+        logging.debug("Host: '%s', Port: '%s'" % (self.ip, self.port))
+        self._history.append(json.loads(msg))
+        for username, client in self._client_list.items():
+            try:
+                client.connection.send(msg)
+            except socket.error:
+                logging.debug("Closing dead socket")
+                self._client_list.pop(username)
 
     def handle_logout(self, content):
         logging.debug("Logging out")
+        logging.debug("Host: '%s', Port: '%s'" % (self.ip, self.port))
         self._send_info("Successfully logged out")
         self.connection.close()
         self._client_list.pop(self.username)
@@ -116,6 +129,7 @@ class ClientHandler(SocketServer.BaseRequestHandler):
     def _send_error(self, error):
         json_string = self._create_json("server", "error", error)
         logging.debug("Sending error message:'%s'" % json_string)
+        #TODO: Handle broken pipe
         self.connection.send(json_string)
 
 
