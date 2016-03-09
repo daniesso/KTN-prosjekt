@@ -52,7 +52,7 @@ class ClientHandler(SocketServer.BaseRequestHandler):
             elif not _logged_in(content):
                 self._client_list[content] = self
                 self._send_info("You are now logged in as {user}".format(user=content))
-                # TODO: Handle history
+                self.connection.send(self._create_json("server", "history", self._history))
             else:
                 self._send_error("Username already taken!")
         else:
