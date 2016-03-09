@@ -39,8 +39,13 @@ class ClientHandler(SocketServer.BaseRequestHandler):
         # Loop that listens for messages from the client
         while True:
             received_string = self.connection.recv(4096)
-            logging.debug("Received string %s" % received_string)
-            req = json.loads(received_string)
+            logging.debug("Received string:'%s'" % received_string)
+            try:
+                req = json.loads(received_string)
+            except ValueError:
+                logging.debug("Could not parse JSON-string: '%s'" % received_string)
+                self._send_error("DEBUG: Invalid JSON:'%s'" % received_string)
+                continue
             command = req.get('request', 'help')
             content = req.get('content', None)
             if command not in self._commands:
@@ -50,7 +55,7 @@ class ClientHandler(SocketServer.BaseRequestHandler):
                 break
 
     def handle_login(self, content):
-        logging.debug("Trying to log in user: %s" % content)
+        logging.debug("Trying to log in user'%s', from '%s', port '%s'" % (content, self.ip, self.port))
         content = content.strip()
         if content and content.isalpha():
             if self.username is not None:
@@ -104,10 +109,14 @@ class ClientHandler(SocketServer.BaseRequestHandler):
         return username in self._client_list
 
     def _send_info(self, info):
-        self.connection.send(self._create_json("server", "info", info))
+        json_string = self._create_json("server", "info", info)
+        logging.debug("Sending info message:'%s'" % json_string)
+        self.connection.send(json_string)
 
     def _send_error(self, error):
-        self.connection.send(self._create_json("server", "error", error))
+        json_string = self._create_json("server", "error", error)
+        logging.debug("Sending error message:'%s'" % json_string)
+        self.connection.send(json_string)
 
 
 class ThreadedTCPServer(SocketServer.ThreadingMixIn, SocketServer.TCPServer):
