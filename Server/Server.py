@@ -88,7 +88,7 @@ class ClientHandler(SocketServer.BaseRequestHandler):
         return self._client_list.values()
 
     def _create_json(self, sender, response, content):
-        return json.dumps({'timestamp': timestamp, 'sender': sender,
+        return json.dumps({'content': content, 'sender': sender,
                            'response': response,
                            'timestamp': str(datetime.datetime.now().timestamp())})
 
@@ -96,10 +96,10 @@ class ClientHandler(SocketServer.BaseRequestHandler):
         return username in self._client_list
 
     def _send_info(self, info):
-        self.connection.send(self.__create_json("server", "info", info))
+        self.connection.send(self._create_json("server", "info", info))
 
     def _send_error(self, error):
-        self.connection.send(self.__create_json("server", "error", error))
+        self.connection.send(self._create_json("server", "error", error))
 
 
 class ThreadedTCPServer(SocketServer.ThreadingMixIn, SocketServer.TCPServer):
