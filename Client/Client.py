@@ -14,18 +14,14 @@ class Client(Thread):
     def __init__(self, host, server_port):
         super(Client, self).__init__(name = "Sender")
 
-        self._connection = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-        logging.debug("Connected to server")
         self._host = host
         self._server_port = server_port
-        self._connection.connect((self._host, self._server_port))
+        self._connection = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 
         self._out_queue = Queue()   # Queue for outgoing traffic
         self._in_queue = Queue()    # Queue for incoming traffic
 
-        self._receive_thread = Thread(target = self._receive_message, name = "Receiver")
         self.daemon = True
-        self._receive_thread.daemon = True
 
         self._exit_flag = Event()
         self._handle = {'message' : self._handle_message,
@@ -33,20 +29,40 @@ class Client(Thread):
                         'error' : self._handle_message,
                         'history' : self._handle_history}
 
-        self._receive_thread.start()
         self.start()
 
     def write(self, string):
+        if self._exit_flag.is_set():
+            raise Exception("Client has been closed")
         self._out_queue.put(string)
 
     def has_next(self):
+        if self._exit_flag.is_set():
+            raise Exception("Client has been closed")
         return not self._in_queue.empty()
 
-    def get_next(self):                 # Blocks if queue is empty,
+    def get_next(self):
+        if self._exit_flag.is_set():
+            raise Exception("Client has been closed")
+
+                                        # Blocks if queue is empty,
         return self._in_queue.get()     # so check first with has_next
 
     def run(self):
+        self._connection.connect((self._host, self._server_port))
+        logging.debug("Connected to server")
 
+        self._receive_thread = Thread(target = self._receive_always, name = "Receiver")
+        self._receive_thread.daemon = True
+        self._receive_thread.start()
+
+        self._send_always()
+
+    def disconnect(self):
+        self._exit_flag.set()
+        self._out_queue.put("")         # Trigger flag check
+
+    def _send_always(self):
         while not self._exit_flag.is_set():
             string = self._out_queue.get()
             if not string:
@@ -60,16 +76,15 @@ class Client(Thread):
             else:
                 self._send_payload("message", string)
 
-    def disconnect(self):
-        self._exit_flag.set()
-        self._out_queue.put("")         # Trigger flag check
-
-    def _receive_message(self):
+    def _receive_always(self):
         while not self._exit_flag.is_set():
             try:
                 raw = self._connection.recv(4096)
                 jsn = json.loads(raw)
             except ValueError as e:
+                if raw == '':
+                    self._exit_flag.set()
+                    break
                 logging.debug("Error while parsing json or receiving")
                 time.sleep(0.3)
                 continue
@@ -104,7 +119,6 @@ def printer(client): # To be replaced with GUI
     while 1:
         if client.has_next():
             print client.get_next()
-
 
 if __name__ == '__main__':
     client = Client('162.243.253.165', 9998)
