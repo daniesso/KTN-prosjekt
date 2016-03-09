@@ -2,6 +2,9 @@
 import SocketServer
 import json
 import datetime
+import logging
+
+logging.basicConfig(format='%(levelname)s: %(message)s', level=logging.DEBUG)
 
 """
 Variables and functions that must be used by all the ClientHandler objects
@@ -32,12 +35,19 @@ class ClientHandler(SocketServer.BaseRequestHandler):
         self._commands = {'login': self.handle_login, 'logout': self.handle_logout, 'message': self.handle_message,
                           'names': self.handle_names, 'help': self.handle_help}
 
+
         # Loop that listens for messages from the client
         while True:
             received_string = self.connection.recv(4096)
-            req = json.loads(received_string)
+            logging.debug("Received string:'%s'" % received_string)
+            try:
+                req = json.loads(received_string)
+            except ValueError:
+                logging.debug("Could not parse JSON-string: '%s'" % received_string)
+                self._send_error("DEBUG: Invalid JSON:'%s'" % received_string)
+                continue
             command = req.get('request', 'help')
-            content = req.get('content', '')
+            content = req.get('content', None)
             if command not in self._commands:
                 command = 'help'
             self._commands.get(command)(content)
@@ -45,11 +55,12 @@ class ClientHandler(SocketServer.BaseRequestHandler):
                 break
 
     def handle_login(self, content):
+        logging.debug("Trying to log in user'%s', from '%s', port '%s'" % (content, self.ip, self.port))
         content = content.strip()
         if content and content.isalpha():
             if self.username is not None:
                 self._send_error("You're already logged in as {user}".format(user=self.username))
-            elif not _logged_in(content):
+            elif not self._logged_in(content):
                 self._client_list[content] = self
                 self._send_info("You are now logged in as {user}".format(user=content))
                 self.connection.send(self._create_json("server", "history", self._history))
@@ -59,22 +70,24 @@ class ClientHandler(SocketServer.BaseRequestHandler):
             self._send_error("Invalid username")
 
     def handle_names(self, content):
+        logging.debug("Names requested")
         self._send_info("\n".join(self._client_list.keys()))
 
     def handle_message(self, content):
+        logging.debug("Trying to send message %s" % content)
         msg = self._create_json(self.username, "message", content)
         self._history.append(msg)
-        for x in self._clientlist.keys():
+        for x in self._client_list.keys():
             self._client_list[x].connection.send(msg)
 
-
     def handle_logout(self, content):
+        logging.debug("Logging out")
         self._send_info("Successfully logged out")
         self.connection.close()
         self._client_list.pop(self.username)
 
     def handle_help(self, content):
-        self.send_info("""This server supports requests in the following format:
+        self._send_info("""This server supports requests in the following format:
         1. login(user name) - attempts to log in with user name
         2. logout() - logs the user out
         3. msg(message) - sends message to everyone in chat room
@@ -90,16 +103,20 @@ class ClientHandler(SocketServer.BaseRequestHandler):
     def _create_json(self, sender, response, content):
         return json.dumps({'content': content, 'sender': sender,
                            'response': response,
-                           'timestamp': str(datetime.datetime.now().timestamp())})
+                           'timestamp': str((datetime.datetime.now() - datetime.datetime(1970, 1, 1)).total_seconds())})
 
     def _logged_in(self, username):
         return username in self._client_list
 
     def _send_info(self, info):
-        self.connection.send(self._create_json("server", "info", info))
+        json_string = self._create_json("server", "info", info)
+        logging.debug("Sending info message:'%s'" % json_string)
+        self.connection.send(json_string)
 
     def _send_error(self, error):
-        self.connection.send(self._create_json("server", "error", error))
+        json_string = self._create_json("server", "error", error)
+        logging.debug("Sending error message:'%s'" % json_string)
+        self.connection.send(json_string)
 
 
 class ThreadedTCPServer(SocketServer.ThreadingMixIn, SocketServer.TCPServer):
@@ -118,7 +135,7 @@ if __name__ == "__main__":
 
     No alterations are necessary
     """
-    HOST, PORT = 'localhost', 9998
+    HOST, PORT = '', 9998
     print 'Server running...'
 
     # Set up and initiate the TCP server
