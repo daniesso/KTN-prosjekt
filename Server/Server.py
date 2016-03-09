@@ -37,7 +37,7 @@ class ClientHandler(SocketServer.BaseRequestHandler):
             received_string = self.connection.recv(4096)
             req = json.loads(received_string)
             command = req.get('request', 'help')
-            content = req.get('content', '')
+            content = req.get('content', None)
             if command not in self._commands:
                 command = 'help'
             self._commands.get(command)(content)
@@ -66,7 +66,6 @@ class ClientHandler(SocketServer.BaseRequestHandler):
         self._history.append(msg)
         for x in self._client_list.keys():
             self._client_list[x].connection.send(msg)
-
 
     def handle_logout(self, content):
         self._send_info("Successfully logged out")
