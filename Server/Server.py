@@ -62,7 +62,11 @@ class ClientHandler(SocketServer.BaseRequestHandler):
         self._send_info("\n".join(self._client_list.keys()))
 
     def handle_message(self, content):
-        pass
+        msg = self._create_json(self.username, "message", content)
+        self._history.append(msg)
+        for x in self._clientlist.keys():
+            self._client_list[x].connection.send(msg)
+
 
     def handle_logout(self, content):
         self._send_info("Successfully logged out")
