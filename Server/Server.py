@@ -81,7 +81,7 @@ class ClientHandler(SocketServer.BaseRequestHandler):
         """)
 
     def get_connected_clients(self):
-        pass
+        return self._client_list.values()
 
     def _create_json(self, sender, response, content):
         return json.dumps({'timestamp': timestamp, 'sender': sender,
