@@ -9,6 +9,7 @@ must be written here (e.g. a dictionary for connected clients)
 """
 
 class ClientHandler(SocketServer.BaseRequestHandler):
+
     """
     This is the ClientHandler class. Everytime a new client connects to the
     server, a new ClientHandler object will be created. This class represents
@@ -37,7 +38,7 @@ class ClientHandler(SocketServer.BaseRequestHandler):
             content = req.get('content', '')
             if command not in self._commands:
                 command = 'help'
-            response = self._commands.get(command)(content)
+            self._commands.get(command)(content)
 
     def handle_login(self, content):
         if content.isalpha():
@@ -76,22 +77,10 @@ class ClientHandler(SocketServer.BaseRequestHandler):
         return username in self._client_list
 
     def _send_info(self, info):
-        self.connection.send(json.dumps({
-        'timestamp' : str(datetime.datetime.now().timestamp()),
-        'sender' : "server",
-        'response' : "info",
-        'content' : info
-        }))
+        self.connection.send(self.__create_json("server", "info", info))
 
     def _send_error(self, error):
-        self.connection.send(json.dumps({
-        'timestamp' : str(datetime.datetime.now().timestamp()),
-        'sender' : "server",
-        'response' : "error",
-        'content' : error
-        }))
-
-
+        self.connection.send(self.__create_json("server", "error", error))
 
 
 class ThreadedTCPServer(SocketServer.ThreadingMixIn, SocketServer.TCPServer):
