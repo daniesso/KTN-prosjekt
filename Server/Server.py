@@ -59,7 +59,7 @@ class ClientHandler(SocketServer.BaseRequestHandler):
             self._send_error("Invalid username")
 
     def handle_names(self, content):
-        pass
+        self._send_info("\n".join(self._client_list.keys()))
 
     def handle_message(self, content):
         pass
