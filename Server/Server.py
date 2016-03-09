@@ -30,6 +30,7 @@ class ClientHandler(SocketServer.BaseRequestHandler):
         self.ip = self.client_address[0]
         self.port = self.client_address[1]
         self.connection = self.request
+        self.username = None
 
         # Loop that listens for messages from the client
         while True:
@@ -40,13 +41,18 @@ class ClientHandler(SocketServer.BaseRequestHandler):
             if command not in self._commands:
                 command = 'help'
             self._commands.get(command)(content)
+            if command == 'logout':
+                break
 
     def handle_login(self, content):
         content = content.strip()
         if content and content.isalpha():
-            if not _logged_in(content):
+            if self.username is not None:
+                self._send_error("You're already logged in as {user}".format(user=self.username))
+            elif not _logged_in(content):
                 self._client_list[content] = self
                 self._send_info("You are now logged in as {user}".format(user=content))
+                # TODO: Handle history
             else:
                 self._send_error("Username already taken!")
         else:
@@ -59,7 +65,9 @@ class ClientHandler(SocketServer.BaseRequestHandler):
         pass
 
     def handle_logout(self, content):
-        pass
+        self._send_info("Successfully logged out")
+        self.connection.close()
+        self._client_list.pop(self.username)
 
     def handle_help(self, content):
         self.send_info("""This server supports requests in the following format:
