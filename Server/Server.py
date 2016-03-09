@@ -20,8 +20,6 @@ class ClientHandler(SocketServer.BaseRequestHandler):
 
     _history = []
     _client_list = {}
-    _commands = {'login': self.handle_login, 'logout': self.handle_logout, 'message': self.handle_message,
-                 'names': self.handle_names, 'help': self.handle_help}
 
     def handle(self):
         """
@@ -31,6 +29,8 @@ class ClientHandler(SocketServer.BaseRequestHandler):
         self.port = self.client_address[1]
         self.connection = self.request
         self.username = None
+        self._commands = {'login': self.handle_login, 'logout': self.handle_logout, 'message': self.handle_message,
+                          'names': self.handle_names, 'help': self.handle_help}
 
         # Loop that listens for messages from the client
         while True:
