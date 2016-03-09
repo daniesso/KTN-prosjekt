@@ -9,10 +9,11 @@ from datetime import datetime   # Format unix time
 
 logging.basicConfig(level=logging.DEBUG)
 
+
 class Client(Thread):
 
     def __init__(self, host, server_port):
-        super(Client, self).__init__(name = "Sender")
+        super(Client, self).__init__(name="Sender")
 
         self._host = host
         self._server_port = server_port
@@ -24,10 +25,10 @@ class Client(Thread):
         self.daemon = True
 
         self._exit_flag = Event()
-        self._handle = {'message' : self._handle_message,
-                        'info' : self._handle_message,
-                        'error' : self._handle_message,
-                        'history' : self._handle_history}
+        self._handle = {'message': self._handle_message,
+                        'info': self._handle_message,
+                        'error': self._handle_message,
+                        'history': self._handle_history}
 
         self.start()
 
@@ -45,14 +46,14 @@ class Client(Thread):
         if self._exit_flag.is_set():
             raise Exception("Client has been closed")
 
-                                        # Blocks if queue is empty,
-        return self._in_queue.get()     # so check first with has_next
+        # Blocks if queue is empty, so check first with has_next
+        return self._in_queue.get()
 
     def run(self):
         self._connection.connect((self._host, self._server_port))
         logging.debug("Connected to server")
 
-        self._receive_thread = Thread(target = self._receive_always, name = "Receiver")
+        self._receive_thread = Thread(target=self._receive_always, name="Receiver")
         self._receive_thread.daemon = True
         self._receive_thread.start()
 
@@ -68,7 +69,7 @@ class Client(Thread):
             if not string:
                 continue
             elif string[0] == "/":
-                args = string[1:].split(" ", 1) # Max two results
+                args = string[1:].split(" ", 1)  # Max two results
                 if len(args) == 1:
                     self._send_payload(args[0], None)
                 elif len(args) == 2:
@@ -103,7 +104,7 @@ class Client(Thread):
             return response, time_stamp, sender, content
 
     def _handle_message(self, time, sender, content):
-        self._in_queue.put("["+time+"] "+str(sender)+": "+str(content))
+        self._in_queue.put("[" + time + "] " + str(sender) + ": " + str(content))
 
     def _handle_history(self, time, sender, content):
         for jsn in content:
@@ -112,10 +113,11 @@ class Client(Thread):
 
     def _send_payload(self, request, content):
         logging.debug("Sending to server NOW")
-        self._connection.send(json.dumps({"request" : request,
-                                          "content" : content}))
+        self._connection.send(json.dumps({"request": request,
+                                          "content": content}))
 
-def printer(client): # To be replaced with GUI
+
+def printer(client):  # To be replaced with GUI
     while 1:
         if client.has_next():
             print client.get_next()
