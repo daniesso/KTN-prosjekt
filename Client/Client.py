@@ -7,8 +7,7 @@ from threading import *
 from Queue import Queue         # Queue for multithreading purposes
 from datetime import datetime   # Format unix time
 
-logging.basicConfig(level=logging.DEBUG)
-
+logging.basicConfig(level=logging.WARN)
 
 class Client(Thread):
 
@@ -104,11 +103,10 @@ class Client(Thread):
             return response, time_stamp, sender, content
 
     def _handle_message(self, time, sender, content):
-        self._in_queue.put("[" + time + "] " + str(sender) + ": " + str(content))
+        self._in_queue.put("[" + time + "] " + sender + ": " + content)
 
     def _handle_history(self, time, sender, content):
         for jsn in content:
-            jsn = json.loads(jsn)
             self._handle_message(*self._extract_fields(jsn)[1:])
 
     def _send_payload(self, request, content):
