@@ -82,10 +82,10 @@ class Client(Thread):
                 raw = self._connection.recv(4096)
                 jsn = json.loads(raw)
             except ValueError as e:
-                if raw == '':
-                    self._exit_flag.set()
+                if raw == '':           # '' usually means closed/broken pipe
+                    self.disconnect()
                     break
-                logging.debug("Error while parsing json or receiving")
+                logging.warning("Error while parsing json or receiving")
                 time.sleep(0.3)
                 continue
             logging.debug("Received from server NOW")
