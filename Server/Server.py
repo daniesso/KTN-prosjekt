@@ -8,6 +8,7 @@ Variables and functions that must be used by all the ClientHandler objects
 must be written here (e.g. a dictionary for connected clients)
 """
 
+
 class ClientHandler(SocketServer.BaseRequestHandler):
 
     """
@@ -41,9 +42,15 @@ class ClientHandler(SocketServer.BaseRequestHandler):
             self._commands.get(command)(content)
 
     def handle_login(self, content):
-        if content.isalpha():
-            if content not in self._client_list:
+        content = content.strip()
+        if content and content.isalpha():
+            if not _logged_in(content):
                 self._client_list[content] = self
+                self._send_info("You are now logged in as {user}".format(user=content))
+            else:
+                self._send_error("Username already taken!")
+        else:
+            self._send_error("Invalid username")
 
     def handle_names(self, content):
         pass
