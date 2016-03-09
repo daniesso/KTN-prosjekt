@@ -7,7 +7,7 @@ from threading import *
 from Queue import Queue         # Queue for multithreading purposes
 from datetime import datetime   # Format unix time
 
-logging.basicConfig(level=logging.WARN)
+logging.basicConfig(level=logging.DEBUG)
 
 class Client(Thread):
 
@@ -78,21 +78,41 @@ class Client(Thread):
 
     def _receive_always(self):
         while not self._exit_flag.is_set():
-            try:
-                raw = self._connection.recv(4096)
-                jsn = json.loads(raw)
-            except ValueError as e:
-                if raw == '':           # '' usually means closed/broken pipe
-                    self.disconnect()
-                    break
-                logging.warning("Error while parsing json or receiving")
-                time.sleep(0.3)
-                continue
+            raw = self._connection.recv(4096)
             logging.debug("Received from server NOW")
 
-            response, time_stamp, sender, content = self._extract_fields(jsn)
-            if response in self._handle:
-                self._handle[response](time_stamp, sender, content)
+            if raw == '':           # '' usually means closed/broken pipe
+                self.disconnect()
+                break
+            jsns = self._load_jsons(raw)
+            for jsn in jsns:
+                response, time_stamp, sender, content = self._extract_fields(jsn)
+                if response in self._handle:
+                    self._handle[response](time_stamp, sender, content)
+
+    def _load_jsons(self, raw):
+        jsns = []
+        end = 0
+        while True:
+            start = raw.find("{", end)
+            if start == -1:
+                break
+            end = start + 1
+            depth = 1
+
+            while depth > 0 and end < len(raw):
+                if raw[end] == "{":
+                    depth += 1
+                elif raw[end] == "}":
+                    depth -= 1
+                end += 1
+            if depth != 0:
+                break
+            try:
+                jsns.append(json.loads(raw[start : end]))
+            except ValueError:
+                logging.debug("Couldn't load json " + raw[start : end])
+        return jsns
 
     def _extract_fields(self, jsn):
             response = jsn.get('response', '')
