@@ -7,7 +7,7 @@ import logging
 import time
 import calendar
 
-logging.basicConfig(format='%(levelname)s: %(message)s', level=logging.DEBUG)
+logging.basicConfig(filename='server.log', format='%(levelname)s: %(message)s', level=logging.DEBUG)
 
 """
 Variables and functions that must be used by all the ClientHandler objects
