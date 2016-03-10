@@ -2,10 +2,10 @@
 import SocketServer
 import socket
 import json
-
-import datetime
 import logging
 
+import time
+import calendar
 
 logging.basicConfig(format='%(levelname)s: %(message)s', level=logging.DEBUG)
 
@@ -119,10 +119,9 @@ class ClientHandler(SocketServer.BaseRequestHandler):
         return self._client_list.values()
 
     def _create_json(self, sender, response, content):
-        # TODO: Handle timezones
         return json.dumps({'content': content, 'sender': sender,
                            'response': response,
-                           'timestamp': str((datetime.datetime.now() - datetime.datetime(1970, 1, 1)).total_seconds())})
+                           'timestamp': self._get_utc_timestamp()})
 
     def _logged_in(self, username):
         return username is not None and username in self._client_list
@@ -137,6 +136,10 @@ class ClientHandler(SocketServer.BaseRequestHandler):
         logging.debug("Sending error message:'%s'" % json_string)
         # TODO: Handle broken pipe
         self.connection.send(json_string)
+
+    @staticmethod
+    def _get_utc_timestamp():
+        return str(calendar.timegm(time.gmtime()))
 
 
 class ThreadedTCPServer(SocketServer.ThreadingMixIn, SocketServer.TCPServer):
