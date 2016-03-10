@@ -39,6 +39,7 @@ class ClientHandler(SocketServer.BaseRequestHandler):
                           'names': self.handle_names, 'help': self.handle_help}
 
         while True:
+            # TODO: Handle disconnects
             received_string = self.connection.recv(4096)
             logging.debug("Received string:'%s'" % received_string)
             logging.debug("Host: '%s', Port: '%s'" % (self.ip, self.port))

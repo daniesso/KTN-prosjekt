@@ -2,12 +2,12 @@
 import socket
 import json
 import logging
-import time
 from threading import *
 from Queue import Queue         # Queue for multithreading purposes
 from datetime import datetime   # Format unix time
 
 logging.basicConfig(level=logging.DEBUG)
+
 
 class Client(Thread):
 
@@ -116,8 +116,11 @@ class Client(Thread):
 
     def _extract_fields(self, jsn):
             response = jsn.get('response', '')
-            time_stamp = float(jsn.get('timestamp', time.time()))  # Default to now
-            time_stamp = datetime.fromtimestamp(time_stamp).strftime("%H:%M:%S")
+            time_stamp = jsn.get('timestamp', None)
+            if time_stamp is not None:
+                time_stamp = datetime.fromtimestamp(float(time_stamp)).strftime("%H:%M:%S")
+            else:
+                time_stamp = 'Unknown'
             sender = jsn.get('sender', '')
             content = jsn.get('content', '')
             return response, time_stamp, sender, content
