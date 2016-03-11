@@ -5,6 +5,7 @@ import logging
 from threading import *
 from Queue import Queue         # Queue for multithreading purposes
 from datetime import datetime   # Format unix time
+import time
 
 logging.basicConfig(level=logging.DEBUG)
 
@@ -140,6 +141,7 @@ class Client(Thread):
 
 def printer(client):  # To be replaced with GUI
     while 1:
+        time.sleep(0.1)
         if client.has_next():
             print client.get_next()
 
