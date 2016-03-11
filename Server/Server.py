@@ -39,8 +39,13 @@ class ClientHandler(SocketServer.BaseRequestHandler):
                           'names': self.handle_names, 'help': self.handle_help}
 
         while True:
-            # TODO: Handle disconnects
-            received_string = self.connection.recv(4096)
+            try:
+                received_string = self.connection.recv(4096)
+            except socket.error as e:
+                logging.debug("Client disconnected %s" % e)
+                if self.username is not None:
+                    self._client_list.pop(self)
+                break
             logging.debug("Received string:'%s'" % received_string)
             logging.debug("Host: '%s', Port: '%s'" % (self.ip, self.port))
             try:
@@ -92,8 +97,8 @@ class ClientHandler(SocketServer.BaseRequestHandler):
         for username, client in self._client_list.items():
             try:
                 client.connection.send(msg)
-            except socket.error:
-                logging.debug("Closing dead socket")
+            except socket.error as e:
+                logging.debug("Closing dead socket: %s" % e)
                 self._client_list.pop(username)
 
     def handle_logout(self, content):
@@ -130,13 +135,18 @@ class ClientHandler(SocketServer.BaseRequestHandler):
     def _send_info(self, info):
         json_string = self._create_json("server", "info", info)
         logging.debug("Sending info message:'%s'" % json_string)
-        self.connection.send(json_string)
+        try:
+            self.connection.send(json_string)
+        except socket.error as e:
+            logging.debug("Client disconnected: %s" % e)
 
     def _send_error(self, error):
         json_string = self._create_json("server", "error", error)
         logging.debug("Sending error message:'%s'" % json_string)
-        # TODO: Handle broken pipe
-        self.connection.send(json_string)
+        try:
+            self.connection.send(json_string)
+        except socket.error as e:
+            logging.debug("Client disconnected: %s" % e)
 
     @staticmethod
     def _get_utc_timestamp():
