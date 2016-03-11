@@ -50,9 +50,9 @@ class ClientHandler(SocketServer.BaseRequestHandler):
             logging.debug("Host: '%s', Port: '%s'" % (self.ip, self.port))
             try:
                 req = json.loads(received_string)
-            except ValueError:
+            except ValueError as e:
                 logging.debug("Could not parse JSON-string: '%s'" % received_string)
-                continue
+                break
             command = req.get('request', 'help')
             content = req.get('content', None)
             if command not in self._commands:
