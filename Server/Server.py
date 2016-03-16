@@ -6,6 +6,7 @@ import logging
 
 import time
 import calendar
+from datetime import datetime
 
 logging.basicConfig(filename='server.log', format='%(levelname)s: %(message)s', level=logging.DEBUG)
 
@@ -93,7 +94,7 @@ class ClientHandler(SocketServer.BaseRequestHandler):
         msg = self._create_json(self.username, "message", content)
         logging.debug("Trying to send message '%s'" % msg)
         logging.debug("Host: '%s', Port: '%s'" % (self.ip, self.port))
-        self._history.append(json.loads(msg))
+        self._history.append(msg)
         for username, client in self._client_list.items():
             try:
                 client.connection.send(msg)
@@ -150,7 +151,8 @@ class ClientHandler(SocketServer.BaseRequestHandler):
 
     @staticmethod
     def _get_utc_timestamp():
-        return str(calendar.timegm(time.gmtime()))
+        #return str(calendar.timegm(time.gmtime()))
+        return datetime.fromtimestamp(time.time()).strftime("%H:%M:%S")
 
 
 class ThreadedTCPServer(SocketServer.ThreadingMixIn, SocketServer.TCPServer):

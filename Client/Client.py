@@ -7,7 +7,7 @@ from Queue import Queue         # Queue for multithreading purposes
 from datetime import datetime   # Format unix time
 import time
 
-logging.basicConfig(level=logging.DEBUG)
+logging.basicConfig(level=logging.WARNING)
 
 
 class Client(Thread):
@@ -119,7 +119,8 @@ class Client(Thread):
             response = jsn.get('response', '')
             time_stamp = jsn.get('timestamp', None)
             if time_stamp is not None:
-                time_stamp = datetime.fromtimestamp(float(time_stamp)).strftime("%H:%M:%S")
+                #time_stamp = datetime.fromtimestamp(float(time_stamp)).strftime("%H:%M:%S")
+                pass
             else:
                 time_stamp = 'Unknown'
             sender = jsn.get('sender', '')
@@ -131,6 +132,7 @@ class Client(Thread):
 
     def _handle_history(self, time, sender, content):
         for jsn in content:
+            jsn = json.loads(jsn)
             self._handle_message(*self._extract_fields(jsn)[1:])
 
     def _send_payload(self, request, content):
@@ -142,13 +144,20 @@ class Client(Thread):
 def printer(client):  # To be replaced with GUI
     while 1:
         time.sleep(0.1)
-        if client.has_next():
-            print client.get_next()
+        try:
+            if client.has_next():
+                print client.get_next()
+        except:
+            break
 
 if __name__ == '__main__':
-    client = Client('162.243.253.165', 9998)
+    #client = Client('162.243.253.165', 9998)
+    client = Client('localhost', 9998)
     t = Thread(target=printer, args=[client])
     t.daemon = True
     t.start()
     while 1:    # To be replaced with GUI
-        client.write(raw_input("> "))
+        try:
+            client.write(raw_input("> "))
+        except:
+            break
